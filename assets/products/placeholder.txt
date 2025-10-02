@@ -1,0 +1,21 @@
+Para agregar imágenes reales de productos:
+
+1. Crea la carpeta: assets/products/
+2. Agrega estas imágenes (formato PNG o JPG, tamaño recomendado 300x300px):
+   - backpack.png (mochila)
+   - sunglasses.png (lentes de sol)
+   - belt.png (cinturón)
+   - jewelry.png (joyería)
+   - earrings.png (aretes)
+   - socks.png (calcetines)
+   - keyring.png (llavero)
+   - hat.png (sombrero)
+   - bag.png (bolsa)
+   - desk.png (artículos de escritorio)
+
+Mientras tanto, si no tienes las imágenes, el código mostrará iconos coloridos como fallback.
+
+Puedes descargar imágenes gratuitas de:
+- Unsplash.com
+- Pexels.com
+- Freepik.com (con atribución)
