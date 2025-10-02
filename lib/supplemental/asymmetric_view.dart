@@ -22,234 +22,100 @@ class AsymmetricView extends StatelessWidget {
 
   final List<Product> products;
 
-  List<Container> _buildColumns(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
+    // TODO: Add a grid view (102)
+    return GridView.count(
+      crossAxisCount: 2,
+      padding: const EdgeInsets.all(16.0),
+      childAspectRatio: 8.0 / 9.0,
+      children: _buildGridCards(context),
+    );
+  }
+
+  List<Card> _buildGridCards(BuildContext context) {
     if (products.isEmpty) {
-      return const <Container>[];
+      return const <Card>[];
     }
 
-    // This will return a list of columns. It will oscillate between the two
-    // kinds of columns. Even cases of the index (0, 2, 4, etc) will be
-    // TwoProductCardColumn and the odd cases (1, 3, 5, etc) will be
-    // OneProductCardColumn.
-    //
-    // Each pair of columns will advance us 3 products forward (2 + 1). That's
-    // some kinda awkward math so we use _evenCasesIndex and _oddCasesIndex as
-    // helpers for creating the index of the product list that will correspond
-    // to the index of the list of columns.
-    return List.generate(_listItemCount(products.length), (int index) {
-      double width = .59 * MediaQuery.of(context).size.width;
-      Widget column;
-      if (index % 2 == 0) {
-        // Even cases
-        int bottom = _evenCasesIndex(index);
-        column = TwoProductCardColumn(
-          bottom: products[bottom],
-          top: products.length - 1 >= bottom + 1
-              ? products[bottom + 1]
-              : null,
-        );
-        width += .21 * MediaQuery.of(context).size.width;
-      } else {
-        // Odd cases
-        int bottom = _oddCasesIndex(index);
-        column = OneProductCardColumn(
-          product: products[bottom],
-        );
-      }
-      return Container(
-        width: width,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: column,
+    final ThemeData theme = Theme.of(context);
+    final NumberFormat formatter = NumberFormat.simpleCurrency(
+        locale: Localizations.localeOf(context).toString());
+
+    return products.map((product) {
+      return Card(
+        clipBehavior: Clip.antiAlias,
+        // TODO: Adjust card heights (103)
+        elevation: 0.0,
+        child: Column(
+          // TODO: Center items on the card (103)
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            AspectRatio(
+              aspectRatio: 18.0 / 11.0,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(4.0),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4.0),
+                  child: Image.network(
+                    _getProductImageUrl(product.id),
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(child: CircularProgressIndicator());
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: _getProductColor(product.id),
+                          borderRadius: BorderRadius.circular(4.0),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            _getProductIcon(product.id),
+                            size: 60,
+                            color: Colors.white,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 8.0),
+                child: Column(
+                  // TODO: Align labels to the bottom and center (103)
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  // TODO: Change innermost Column (103)
+                  children: <Widget>[
+                    // TODO: Handle overflowing labels (103)
+                    Text(
+                      product.name,
+                      style: theme.textTheme.labelLarge,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                    const SizedBox(height: 4.0),
+                    Text(
+                      formatter.format(product.price),
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       );
     }).toList();
-  }
-
-  int _evenCasesIndex(int index) {
-    // The operator ~/ is a cool one. It's the truncating division operator. It
-    // divides the number and cuts off the decimal. This is like dividing and
-    // then casting the result to int. Also, it's way faster.
-    return index ~/ 2 * 3;
-  }
-
-  int _oddCasesIndex(int index) {
-    assert(index > 0);
-    return (index / 2).ceil() * 3 - 1;
-  }
-
-  int _listItemCount(int totalItems) {
-    if (totalItems % 3 == 0) {
-      return totalItems ~/ 3 * 2;
-    } else {
-      return (totalItems / 3).ceil() * 2 - 1;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(0.0, 34.0, 16.0, 44.0),
-      children: _buildColumns(context),
-    );
-  }
-}
-
-class OneProductCardColumn extends StatelessWidget {
-  const OneProductCardColumn({Key? key, this.product}) : super(key: key);
-
-  final Product? product;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 0.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: <Widget>[
-          ProductCard(
-            product: product,
-            imageAspectRatio: 3.0 / 4.0,
-          ),
-          const SizedBox(
-            height: 40.0,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class TwoProductCardColumn extends StatelessWidget {
-  const TwoProductCardColumn({
-    Key? key,
-    this.bottom,
-    this.top,
-  }) : super(key: key);
-
-  final Product? bottom, top;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 0.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: <Widget>[
-          ProductCard(
-            product: top,
-            imageAspectRatio: 3.0 / 4.0,
-          ),
-          const SizedBox(height: 16.0),
-          ProductCard(
-            product: bottom,
-            imageAspectRatio: 3.0 / 4.0,
-          ),
-          const SizedBox(height: 12.0),
-        ],
-      ),
-    );
-  }
-}
-
-class ProductCard extends StatelessWidget {
-  const ProductCard({
-    Key? key,
-    this.imageAspectRatio,
-    this.product,
-  }) : super(key: key);
-
-  final double? imageAspectRatio;
-  final Product? product;
-
-  static const double kTextBoxHeight = 65.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final NumberFormat formatter = NumberFormat.simpleCurrency(
-      locale: Localizations.localeOf(context).toString(),
-    );
-    final ThemeData theme = Theme.of(context);
-
-    final imageWidget = Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F5),
-        borderRadius: BorderRadius.circular(4.0),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(4.0),
-        child: Image.network(
-          _getProductImageUrl(product?.id ?? 0),
-          fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(
-            color: Colors.grey[300],
-            child: Center(
-              child: CircularProgressIndicator(
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes!
-                    : null,
-              ),
-            ),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            decoration: BoxDecoration(
-              color: _getProductColor(product?.id ?? 0),
-              borderRadius: BorderRadius.circular(4.0),
-            ),
-            child: Center(
-              child: Icon(
-                _getProductIcon(product?.id ?? 0),
-                size: 60,
-                color: Colors.white,
-              ),
-            ),
-          );
-        },
-        ),
-      ),
-    );
-
-    return Card(
-      elevation: 0.0,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          AspectRatio(
-            aspectRatio: imageAspectRatio ?? 33 / 49,
-            child: imageWidget,
-          ),
-          Container(
-            height: kTextBoxHeight,
-            width: 121.0,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                Text(
-                  product == null ? '' : product!.name,
-                  style: theme.textTheme.labelLarge,
-                  softWrap: false,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-                const SizedBox(height: 4.0),
-                Text(
-                  product == null ? '' : formatter.format(product!.price),
-                  style: theme.textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Color _getProductColor(int id) {
@@ -286,17 +152,51 @@ class ProductCard extends StatelessWidget {
 
   String _getProductImageUrl(int id) {
     final imageUrls = [
-      'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=300&h=300&fit=crop&bg=f5f5f5', // Backpack - Vagabond sack
-      'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=300&h=300&fit=crop&bg=f5f5f5', // Sunglasses - Stella sunglasses
-      'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=300&h=300&fit=crop&bg=f5f5f5', // Belt - Whitney belt
-      'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=300&h=300&fit=crop&bg=f5f5f5', // Jewelry - Garden strand
-      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&h=300&fit=crop&bg=f5f5f5', // Earbuds - Strut earrings
-      'https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?w=300&h=300&fit=crop&bg=f5f5f5', // Socks - Varsity socks
-      'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&h=300&fit=crop&bg=f5f5f5', // Accessories - Weave keyring
-      'https://images.unsplash.com/photo-1521369909029-2afed882baee?w=300&h=300&fit=crop&bg=f5f5f5', // Hat - Gatsby hat
-      'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=300&h=300&fit=crop&bg=f5f5f5', // Handbag - Shrug bag
-      'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=300&h=300&fit=crop&bg=f5f5f5', // Desk items - Gilt desk trio
+      // ACCESSORIES (0-8)
+      'https://images.unsplash.com/photo-1622560481156-01fc7e1693e6?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 0: Vagabond sack
+      'https://plus.unsplash.com/premium_photo-1755553445914-3825d002aa71?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 1: Stella sunglasses
+      'https://images.unsplash.com/photo-1750175546523-f771dcde8d5f?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%', // 2: Whitney belt
+      'https://images.unsplash.com/photo-1655731739305-67958f705170?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 3: Garden strand
+      'https://images.unsplash.com/photo-1496957961599-e35b69ef5d7c?q=80&w=1172&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 4: Strut earrings
+      'https://images.unsplash.com/photo-1733744236936-bcb5abc19f63?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 5: Varsity socks
+      'https://images.unsplash.com/photo-1593671186131-d58817e7dee0?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 6: Weave keyring
+      'https://images.unsplash.com/photo-1678099283805-bf9b60237289?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 7: Gatsby hat
+      'https://images.unsplash.com/photo-1448582649076-3981753123b5?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 8: Shrug bag
+      
+      // HOME ITEMS (9-18)
+      'https://images.unsplash.com/photo-1646705193300-aa2815a15bcd?q=80&w=1331&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 9: Gilt desk trio
+      'https://images.unsplash.com/photo-1613335363385-561d216954cc?q=80&w=1169&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 10: Copper wire rack
+      'https://images.unsplash.com/photo-1715370038406-f471edf86328?q=80&w=1233&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 11: Soothe ceramic set
+      'https://images.unsplash.com/photo-1584428885051-d80a38d86b39?q=80&w=1074&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 12: Hurrahs tea set
+      'https://images.unsplash.com/photo-1755638110931-3da1d1174c14?q=80&w=1112&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 13: Blue stone mug
+      'https://images.unsplash.com/photo-1646021798748-4049ca4191c0?q=80&w=1174&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 14: Rainwater tray
+      'https://plus.unsplash.com/premium_photo-1673481600840-a261d546b2bf?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 15: Chambray napkins
+      'https://plus.unsplash.com/premium_photo-1668416114981-1d6cd2acbc7d?q=80&w=1172&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 16: Succulent planters
+      'https://images.unsplash.com/photo-1643913591623-4335627a1677?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 17: Quartet table
+      'https://images.unsplash.com/photo-1708915965975-2a950db0e215?q=80&w=1112&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 18: Kitchen quattro
+
+      // CLOTHING (19-37)
+      'https://plus.unsplash.com/premium_photo-1733701621287-f1023730af18?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 19: Clay sweater
+      'https://images.unsplash.com/photo-1555272899-13b1d044bc7e?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 20: Sea tunic
+      'https://images.unsplash.com/photo-1591130901966-1b6770de5120?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 21: Plaster tunic
+      'https://images.unsplash.com/photo-1758180501142-fd64566c3531?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 22: White pinstripe shirt
+      'https://images.unsplash.com/photo-1713881630214-82c44407cf25?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 23: Chambray shirt
+      'https://plus.unsplash.com/premium_photo-1758698145702-7f08b2dae2b3?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 24: Seabreeze sweater
+      'https://plus.unsplash.com/premium_photo-1664298280363-51c8881ce9ba?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 25: Gentry jacket
+      'https://plus.unsplash.com/premium_photo-1661687201493-12dc7e962519?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 26: Navy trousers
+      'https://plus.unsplash.com/premium_photo-1724075323608-f02348de3ed7?q=80&w=1138&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 27: Walter henley (white)
+      'https://plus.unsplash.com/premium_photo-1750153889694-a80bbcb14e86?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 28: Surf and perf shirt
+      'https://images.unsplash.com/photo-1737061556974-4d0ac84f46b2?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 29: Ginger scarf
+      'https://plus.unsplash.com/premium_photo-1691622500309-6976109c80b9?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 30: Ramona crossover
+      'https://images.unsplash.com/photo-1623658580851-3b25bf83b4ea?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 31: Chambray shirt
+      'https://plus.unsplash.com/premium_photo-1739548335715-cd815b9c5e6f?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 32: Classic white collar
+      'https://plus.unsplash.com/premium_photo-1682633540291-6229fc6845ec?q=80&w=1169&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 33: Cerise scallop tee
+      'https://plus.unsplash.com/premium_photo-1741708875396-afc14c43b4ff?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 34: Shoulder rolls tee
+      'https://images.unsplash.com/photo-1737094540214-261561588b89?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 35: Grey slouch tank
+      'https://plus.unsplash.com/premium_photo-1661380487022-4aac8ec31625?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 36: Sunshirt dress
+      'https://plus.unsplash.com/premium_photo-1664910323372-3445d1ff78cc?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 37: Fine lines tee
     ];
-    return imageUrls[id % imageUrls.length];
+    return imageUrls[id];
   }
 }
+
